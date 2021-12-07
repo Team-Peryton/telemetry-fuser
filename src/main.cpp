@@ -9,21 +9,22 @@
 #define PILOT Serial2
 #define VISOR Serial3
 
-unsigned long id = 0;
+unsigned long id;
 
 void setup()
 {
     pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, LOW);
 
     /* SD card begin */
     if (!SD.begin())
-    { /*  ==Long blink 5 times if the SD card fails to initialise==   */
-        for (int i = 0; i <= 5; i++)
+    { /*  ==Fast blink 10 times if the SD card fails to initialise==   */
+        for (int i = 0; i <= 10; i++)
         {
             digitalWrite(LED_BUILTIN, HIGH); // turn the LED on (HIGH is the voltage level)
-            delay(800);
-            digitalWrite(LED_BUILTIN, LOW); // turn the LED off by making the voltage LOW
             delay(200);
+            digitalWrite(LED_BUILTIN, LOW); // turn the LED off by making the voltage LOW
+            delay(100);
         }
     }
 
@@ -31,6 +32,23 @@ void setup()
     RADIO.begin(57600); // initialise Serial1 : Connection to radio
     PILOT.begin(57600); // initialise Serial2 : Connection to Ardupilot / Mission Planner
     VISOR.begin(57600); // initialise Serial3 : Connection to Autovisor / Co-computer
+
+    while (!RADIO || !PILOT || !VISOR)
+    {
+        /* Slow flash while waiting for serial ports to initialise */
+        digitalWrite(LED_BUILTIN, HIGH); // turn the LED on (HIGH is the voltage level)
+        delay(600);
+        digitalWrite(LED_BUILTIN, LOW); // turn the LED off by making the voltage LOW
+        delay(600);
+    }
+
+    id = 0; // Resets packet id counter
+}
+
+/* Sends an addressed packet via the RADIO, returning whether the correct number of bytes were written (WIP) */
+bool sendLetter(String message)
+{
+    RADIO.println(message);
 }
 
 /*  Takes a packet, addresses it to the PILOT or the VISOR, formats it for radio transmission, then returns the formatted message  */
@@ -43,6 +61,7 @@ String addressTo(String packet, String recipient, unsigned long messageId)
 /*  Opens a message from the RADIO, returns the intended recipient  */
 String readAddress(String packet)
 {
+    
 }
 
 /*  Opens a message from the RADIO, returns the id of the message  */
@@ -57,7 +76,6 @@ String openLetter(String packet)
 
 void radioIn()
 {
-    return RADIO.readString();
 }
 
 void radioOut()
