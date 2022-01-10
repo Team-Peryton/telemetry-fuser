@@ -1,15 +1,17 @@
 #include <Arduino.h>
 
-// SD card libraries
+/* SD card libraries */
 #include <SPI.h>
 #include <SD.h>
 
-/*  Serial aliases  */
+/* Serial aliases */
 #define RADIO Serial1
 #define PILOT Serial2
 #define VISOR Serial3
 
-unsigned long id;
+/* Define max message length to avoid using dynamic memory. (The MAVLink max packet size is 280 bytes) */
+// #define MAX_LENGTH 320
+// Only needed if we work with Chars
 
 void setup()
 {
@@ -41,8 +43,6 @@ void setup()
         digitalWrite(LED_BUILTIN, LOW); // turn the LED off by making the voltage LOW
         delay(600);
     }
-
-    id = 0; // Resets packet id counter
 }
 
 /* Sends an addressed packet via the RADIO, returning whether the correct number of bytes were written (WIP) */
@@ -54,24 +54,34 @@ bool sendLetter(String message)
 /*  Takes a packet, addresses it to the PILOT or the VISOR, formats it for radio transmission, then returns the formatted message  */
 String addressTo(String packet, String recipient, unsigned long messageId)
 {
-    // return format {id:1,recipient:VISOR,message:Crash immediately} (should in theory automatically be appended with null character '\0')
+    // return format {id:1,recipient:VISOR,message:Crash immediately}
     return String("{id:" + String(messageId) + ",recipient:" + recipient + ",message:" + packet + "}");
 }
 
 /*  Opens a message from the RADIO, returns the intended recipient  */
 String readAddress(String packet)
 {
-    
+    String search = "recipient:";  // tag to search for
+    byte index = packet.indexOf(search) + search.length();    // start index of recipient
+    return packet.substring(index, index + 5);    // + 5 because that is the length of the 3 possible recipients: RADIO, PILOT, VISOR
 }
 
 /*  Opens a message from the RADIO, returns the id of the message  */
 unsigned long readID(String packet)
 {
+    String search = "id:";  // tag to search for
+    byte startIndex = packet.indexOf(search) + search.length();    // start index of tag
+    byte endIndex = packet.indexOf(",");    // index of first "," delimiter
+    return packet.substring(startIndex, endIndex).toInt();    // the internet told me that .toInt() should work even though it's unsigned long
 }
 
 /*  Opens a message from the RADIO, returns the packet contained inside  */
 String openLetter(String packet)
 {
+    String search = "message:";  // tag to search for
+    byte startIndex = packet.indexOf(search) + search.length();    // start index of tag
+    byte endIndex = packet.lastIndexOf("}");    // index of last "}" tag. Should work even if message contains "}" and if the packet  is appended with null characters
+    return packet.substring(startIndex, endIndex).toInt();    // the internet told me that .toInt() should work even though it's unsigned long
 }
 
 void radioIn()
@@ -107,6 +117,16 @@ void visorOut()
 // loop() goes at the end to avoid compile errors
 void loop()
 {
+    // [Turn on LED when there are packets in the buffer]
+    // [Turn off LED when the packet buffer has been emptied]
+
+    
+        /* The idea of the ID is that if either end receives a mesage with an ID which doesn't match their counter,
+    they can deduce that message(s) have been missed, and they can then resynchronise. 
+    Static should allow it to retain its value between loops */
+    static unsigned long int id = 0; // Message ID counter
+
+
     String sReceivedPacket;
     String sForwardPacket;
 
