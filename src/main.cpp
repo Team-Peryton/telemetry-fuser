@@ -15,14 +15,11 @@ const int chipSelect = BUILTIN_SDCARD;
 
 /* loop working variables */
 #define CYCLETIME 10 // aim for X ms per cycle
+unsigned short id;
 uint32_t start;
 uint32_t time_left;
 String sReceivedPacket;
 String sForwardPacket;
-
-/* Define max message length to avoid using dynamic memory. (The MAVLink max packet size is 280 bytes) */
-// #define MAX_LENGTH 320
-// Only needed if working with Chars
 
 void setup()
 {
@@ -38,32 +35,27 @@ void setup()
         
         for (int i = 0; i <= 10; i++)
         {
-            led(HIGH); // turn the LED on (HIGH is the voltage level)
-            delay(200);
-            led(LOW); // turn the LED off by making the voltage LOW
-            delay(100);
+
+            digitalWrite(LED_BUILTIN, HIGH); delay(200);
+            digitalWrite(LED_BUILTIN, LOW); delay(100);
         }
     }
     else {
         Serial.println("SD card initialised");
     }
-
+  
     /* open the file */
     
-
 
     /* Serial ports begin */
     RADIO.begin(57600); // initialise Serial1 : Connection to radio
     PILOT.begin(57600); // initialise Serial2 : Connection to Ardupilot / Mission Planner
-    VISOR.begin(57600); // initialise Serial3 : Connection to Autovisor / Co-computer
+    VISOR.begin(57600); // initialise Serial3 : Connection to Autovisor / ground station
 
     while (!RADIO || !PILOT || !VISOR)
     {
-        /* Slow flash while waiting for serial ports to initialise */
-        led(HIGH); // turn the LED on (HIGH is the voltage level)
-        delay(600);
-        led(LOW); // turn the LED off by making the voltage LOW
-        delay(600);
+        digitalWrite(LED_BUILTIN, HIGH); delay(1000);
+        digitalWrite(LED_BUILTIN, LOW); delay(500);
     }
 
     sReceivedPacket.reserve(300); // reserving memory for strings supposedly increases speed
