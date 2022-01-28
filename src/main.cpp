@@ -1,16 +1,17 @@
 #include <Arduino.h>
 #include "radio.h"
+#define DEBUG 1
 
-/*  Serial */
-#define RADIO Serial1
-#define PILOT Serial2
-#define VISOR Serial3
-
-/* SD card relevant */
+/* SD card libraries */
 #include <SD.h>
 #include <SPI.h>
 File logger;
 const int chipSelect = BUILTIN_SDCARD; 
+
+/* Serial aliases */
+#define RADIO Serial1
+#define PILOT Serial2
+#define VISOR Serial3
 
 /* loop working variables */
 #define CYCLETIME 10 // aim for X ms per cycle
@@ -20,19 +21,21 @@ uint32_t time_left;
 String sReceivedPacket;
 String sForwardPacket;
 
-
-
-
 void setup()
 {
+    Serial.begin(9600);
+
     pinMode(LED_BUILTIN, OUTPUT);
-    digitalWrite(LED_BUILTIN, LOW);
 
     /* SD card begin */
     if (!SD.begin(chipSelect))
     { /*  ==Fast blink 10 times if the SD card fails to initialise==   */
+    
+        Serial.println("SD card failed to initialise");
+        
         for (int i = 0; i <= 10; i++)
         {
+
             digitalWrite(LED_BUILTIN, HIGH); delay(200);
             digitalWrite(LED_BUILTIN, LOW); delay(100);
         }
@@ -40,7 +43,9 @@ void setup()
     else {
         Serial.println("SD card initialised");
     }
-
+  
+    /* open the file */
+    
 
     /* Serial ports begin */
     RADIO.begin(57600); // initialise Serial1 : Connection to radio
@@ -53,61 +58,54 @@ void setup()
         digitalWrite(LED_BUILTIN, LOW); delay(500);
     }
 
-    id = 0; // Resets packet id counter
-    sReceivedPacket.reserve(300); // reserving memory for strings increases speed
+    sReceivedPacket.reserve(300); // reserving memory for strings supposedly increases speed
     sForwardPacket.reserve(300);
 }
 
 
-
-
+// loop() goes at the end to avoid compile errors
 void loop()
-{
+{  
     start = millis();
 
-    sReceivedPacket = RADIO.readStringUntil('\n');
+    /* The idea of the ID is that if either end receives a mesage with an ID which doesn't match their counter,
+    they can deduce that message(s) have been missed, and they can then resynchronise. 
+    Static should allow it to retain its value between loops */
+    static unsigned long int id = 0; // Message ID counter
+    static unsigned short int address = 0; // Message ID counter
 
-    id = readAddress(sReceivedPacket); // determine packet source
+    if(RADIO.available()){
+        sReceivedPacket = RADIO.readStringUntil('\n');
+        address = readAddress(sReceivedPacket); // determine packet source
 
-    switch (id)
-    {
-        case ARDUPILOT:
-            // forward to pilot serial
-            for(unsigned int i=0; i < sReceivedPacket.length(); i++){
-                RADIO.write(sReceivedPacket[i]);
-            }
-            break;
-        
-        case COCOMPUTER:
-            // store, cut oldest packet if store too large
-            break;
-        
-        default:
-            break;
+        switch (address)
+        {
+            case ARDUPILOT:
+                // forward to pilot serial
+                for(unsigned int i=0; i < sReceivedPacket.length(); i++){
+                    RADIO.write(sReceivedPacket[i]);
+                }
+                break;
+            
+            case COCOMPUTER:
+                // store, cut oldest packet if store too large
+                break;
+            
+            default:
+                break;
+        }
     }
 
-    // must be a better way of doing this lol
+    // immediately forward anything from the autopilot to the radio
     sReceivedPacket = PILOT.readStringUntil('\n');
-    for(unsigned int i=0; i < sReceivedPacket.length(); i++){
-        RADIO.write(sReceivedPacket[i]);
+    RADIO.println(sReceivedPacket);
+
+    if(RADIO.available()){
+        return; // restart the loop
     }
-
-
+    
     sReceivedPacket = VISOR.readStringUntil('\n');
     // Store
 
-
     time_left = start - millis();
-    // need a way to evenly distribute tasks
-    /*
-        IF TIME
-            wrap VISOR packet and store
-            if store too large, cut oldest packet
-        IF TIME
-            forward a new VISOR packet to radio
-        IF TIME
-            forward a stored VISOR packet to co-computer serial
-
-    */
-
 }

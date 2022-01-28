@@ -12,10 +12,9 @@ Combine datastreams from two serial devices into one, using MAVLINK packets. Spe
 - should log errors / stream to an SD card
 
 
-## psudo code
 
 ```
-Radio recieve
+RADIO recieve
 
     determine packet source
 
@@ -25,9 +24,10 @@ Radio recieve
         store
         if store too large, cut oldest packet
 
-
 PILOT receive
     forward to radio
+
+check if any RADIO data availible
 
 VISOR recieve
     store
@@ -40,3 +40,4 @@ IF TIME
 IF TIME
     forward a stored VISOR packet to co-computer serial
 ```
+
