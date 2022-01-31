@@ -51,6 +51,23 @@ String readMessage(String packet)
     return packet.substring(startIndex, endIndex);
 }
 
+/* 0th item is oldest, remove it and add the newMessage as last array item */
+void replaceQueueOldest(String arr[5], String newMessage){
+    for(int i = 0; i < 3; i++){
+        arr[i] = arr[i+1];
+    }
+    arr[4] = newMessage;
+}
+
+int intRotate(int current, int limit){
+    if(current++ > limit){
+        return 0;
+    }
+    else{
+        return current++;
+    }
+}
+
 void radioSort()
 {
 }
@@ -60,3 +77,4 @@ void pilotSort()
 void visorSort()
 {
 }
+
