@@ -1,8 +1,5 @@
 #include <Arduino.h>
 
-#define ARDUPILOT 0
-#define COCOMPUTER 1
-
 void led(int b);
 
 bool sendLetter(String message, HardwareSerial& com);
@@ -14,6 +11,10 @@ bool isPilotPacket(String packet);
 unsigned long readID(String packet);
 
 String readMessage(String packet);
+
+void replaceQueueOldest(String arr[5], String newMessage);
+
+int intRotate(int current, int limit);
 
 void radioSort();
 

@@ -1,6 +1,12 @@
 #include <Arduino.h>
 #include "radio.h"
+
+/* static parameters */
 #define DEBUG 1
+#define CYCLETIME 5 // aim for X ms per cycle
+#define PACKET_RESERVE 200
+#define QUEUE_LENGTH 5
+
 
 /* SD card libraries */
 #include <SD.h>
@@ -14,12 +20,15 @@ const int chipSelect = BUILTIN_SDCARD;
 #define VISOR Serial3
 
 /* loop working variables */
-#define CYCLETIME 10 // aim for X ms per cycle
 unsigned short id;
 uint32_t start;
 uint32_t time_left;
 String sReceivedPacket;
 String sForwardPacket;
+String radio_queue[QUEUE_LENGTH];
+String visor_queue[QUEUE_LENGTH];
+String wrapped_message;
+int visor_task = 0;
 
 void setup()
 {
@@ -62,8 +71,15 @@ void setup()
         delay(500);
     }
 
-    sReceivedPacket.reserve(300); // reserving memory for strings supposedly increases speed
-    sForwardPacket.reserve(300);
+    sReceivedPacket.reserve(PACKET_RESERVE); // reserving memory for strings supposedly increases speed
+    sForwardPacket.reserve(PACKET_RESERVE);
+    wrapped_message.reserve(PACKET_RESERVE);
+    for(int i=0; i < QUEUE_LENGTH; i++){
+        radio_queue[i] = String().reserve(PACKET_RESERVE);
+    }
+    for(int i=0; i < QUEUE_LENGTH; i++){
+        visor_queue[i] = String().reserve(PACKET_RESERVE);
+    }
 }
 
 // loop() goes at the end to avoid compile errors
@@ -75,73 +91,58 @@ void loop()
     they can deduce that message(s) have been missed, and they can then resynchronise. 
     Static should allow it to retain its value between loops */
     static unsigned long int id = 0;       // Message ID counter
-    static unsigned short int address = 0; // Message ID counter
 
     if (RADIO.available())
     {
         sReceivedPacket = RADIO.readStringUntil('\n');
 
-        switch (isPilotPacket(sReceivedPacket))
-        {
-        case true:
+        if(isPilotPacket(sReceivedPacket)){
             // forward to pilot serial
-            for (unsigned int i = 0; i < sReceivedPacket.length(); i++)
-            {
+            for (unsigned int i = 0; i < sReceivedPacket.length(); i++){
                 PILOT.write(sReceivedPacket[i]);
             }
-            break;
-
-        case false:
-            /* store, cut oldest packet if store too large */
-            break;
-
-        default:
-            /* log error */
-            break;
+        }
+        else{
+            replaceQueueOldest(radio_queue, sReceivedPacket);
         }
     }
 
-    // (edited so it only tries to read from the RADIO if something is there)
-    if (RADIO.available())
-    {
-        // immediately forward anything from the autopilot to the radio
-
+    // immediately forward anything from the autopilot to the radio
+    if (PILOT.available()){
         sReceivedPacket = PILOT.readStringUntil('\n');
         RADIO.println(sReceivedPacket);
-
         return; // restart the loop
     }
 
-    sReceivedPacket = VISOR.readStringUntil('\n');
-    // Store
-
-
-    // time_left = start - millis(); Removed for speed
-
-    if (start - millis() < CYCLETIME)
-    {
-        /* code */
-    }
-    else
-    {
-        return;
+        // read from the RADIO if something is there
+    if (RADIO.available()){
+        return; // restart the loop
     }
 
-        if (start - millis() < CYCLETIME)
-    {
-        /* code */
-    }
-    else
-    {
-        return;
+    if (VISOR.available()){
+        sReceivedPacket = VISOR.readStringUntil('\n');
+        replaceQueueOldest(visor_queue, sReceivedPacket);
     }
 
-        if (start - millis() < CYCLETIME)
-    {
-        /* code */
+
+    // this could maybe be "if(!RADIO.availible())"
+    if (start - millis() < CYCLETIME) {
+        visor_task = intRotate(visor_task, 2);
+        switch(visor_task){
+            case 0:
+                // wrap VISOR packet
+                wrapped_message = addressToVISOR(visor_queue[0], id);
+            case 1:
+                // forward a wrapped packet to the radio
+                RADIO.println(wrapped_message);
+            case 2:
+                // forward a stored radio packet to visor
+                VISOR.println(radio_queue[0]);
+            default:
+                // log error
+                break;
+        }
     }
-    else
-    {
-        return;
-    }
+
+    return;
 }
