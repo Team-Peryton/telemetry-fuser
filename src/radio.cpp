@@ -6,7 +6,7 @@ void led(int b)
 }
 
 /* Sends an addressed packet via the RADIO, returning whether the correct number of bytes were written */
-bool sendLetter(String message, HardwareSerial& com)     // !!! this might not work
+bool sendLetter(String message, HardwareSerial &com) // !!! this might not work
 {
     byte bytesWritten = com.println(message);
     if (bytesWritten == message.length())
@@ -20,18 +20,17 @@ bool sendLetter(String message, HardwareSerial& com)     // !!! this might not w
 }
 
 /*  Takes a packet, addresses it to the PILOT or the VISOR, formats it for radio transmission, then returns the formatted message  */
-String addressTo(String packet, String recipient, unsigned long messageId)
+String addressToVISOR(String packet, unsigned long messageId)
 {
-    // return format {id:1,recipient:VISOR,message:Crash immediately}
-    return String("{id:" + String(messageId) + ",recipient:" + recipient + ",message:" + packet + "}");
+    // return format "%VISOR,id:1,message:Crash immediately"
+    return String("%VISOR,id:" + String(messageId) + ",message:" + packet);
 }
 
-/*  Opens a message from the RADIO, returns the intended recipient  */
-unsigned short readAddress(String packet)
+/*  Opens a message from the RADIO, returns whether it is intended for the PILOT  */
+bool isPilotPacket(String packet)
 {
-    String search = "recipient:";                          // tag to search for
-    byte index = packet.indexOf(search) + search.length(); // start index of recipient
-    return packet.substring(index, index + 1).toInt();     // + 1 addresses from 0 - 9
+    byte index = packet.indexOf("%VISOR"); // start index of %VISOR tag
+    return (index == -1);                  // %VISOR tag not present: PILOT packet
 }
 
 /*  Opens a message from the RADIO, returns the id of the message  */

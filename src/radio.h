@@ -7,9 +7,9 @@ void led(int b);
 
 bool sendLetter(String message, HardwareSerial& com);
 
-String addressTo(String packet, String recipient, unsigned long messageId);
+String addressToVISOR(String packet, unsigned long messageId);
 
-unsigned short readAddress(String packet);
+bool isPilotPacket(String packet);
 
 unsigned long readID(String packet);
 
