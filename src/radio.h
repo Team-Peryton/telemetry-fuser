@@ -1,7 +1,5 @@
 #include <Arduino.h>
 
-void led(int b);
-
 bool sendLetter(String message, HardwareSerial& com);
 
 String addressToVISOR(String packet, unsigned long messageId);

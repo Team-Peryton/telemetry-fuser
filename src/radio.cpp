@@ -1,10 +1,5 @@
 #include <Arduino.h>
 
-void led(int b)
-{
-    digitalWrite(LED_BUILTIN, b);
-}
-
 /* Sends an addressed packet via the RADIO, returning whether the correct number of bytes were written */
 bool sendLetter(String message, HardwareSerial &com) // !!! this might not work
 {
@@ -52,18 +47,23 @@ String readMessage(String packet)
 }
 
 /* 0th item is oldest, remove it and add the newMessage as last array item */
-void replaceQueueOldest(String arr[5], String newMessage){
-    for(int i = 0; i < 3; i++){
-        arr[i] = arr[i+1];
+void replaceQueueOldest(String arr[5], String newMessage)
+{
+    for (int i = 0; i < 3; i++)
+    {
+        arr[i] = arr[i + 1];
     }
     arr[4] = newMessage;
 }
 
-int intRotate(int current, int limit){
-    if(current++ > limit){
+int intRotate(int current, int limit)
+{
+    if (current++ > limit)
+    {
         return 0;
     }
-    else{
+    else
+    {
         return current++;
     }
 }
@@ -77,4 +77,3 @@ void pilotSort()
 void visorSort()
 {
 }
-
