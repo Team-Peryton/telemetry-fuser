@@ -98,18 +98,10 @@ void setup()
     }
 }
 
-// loop() goes at the end to avoid compile errors
+
 void loop()
 {
     start = millis();
-
-    /* The idea of the ID was that if either end receives a mesage with an ID which doesn't match their counter,
-    they can deduce that message(s) have been missed, and they can then resynchronise, but
-    considering only VISOR packets have an ID now I don't know if it's worth it */
-
-    /* Also, my idea was to have the ID increment each time a RADIO message is either sent or received 
-    but I do not know if that's the best way of doing it, I'm no error-detection specialist */
-    static unsigned long int id = 0; // Message ID counter
 
     if (RADIO.available())
     {
@@ -155,18 +147,18 @@ void loop()
         visor_task = intRotate(visor_task, 2);
         switch (visor_task)
         {
-        case 0:
-            // wrap VISOR packet
-            sWrappedMessage = addressToVISOR(visor_queue[0], id);
-        case 1:
-            // forward a wrapped packet to the radio
-            RADIO.println(sWrappedMessage);
-        case 2:
-            // forward a stored radio packet to visor
-            VISOR.println(radio_queue[0]);
-        default:
-            // log error
-            break;
+            case 0:
+                // wrap VISOR packet
+                sWrappedMessage = addressToVISOR(visor_queue[0]);
+            case 1:
+                // forward a wrapped packet to the radio
+                RADIO.println(sWrappedMessage);
+            case 2:
+                // forward a stored radio packet to visor
+                VISOR.println(radio_queue[0]);
+            default:
+                // log error
+                break;
         }
     }
 

@@ -15,10 +15,9 @@ bool sendLetter(String message, HardwareSerial &com) // !!! this might not work
 }
 
 /*  Takes a packet, addresses it to the PILOT or the VISOR, formats it for radio transmission, then returns the formatted message  */
-String addressToVISOR(String packet, unsigned long messageId)
+String addressToVISOR(String packet)
 {
-    // return format "%VISOR,id:1,message:Crash immediately"
-    return String("%VISOR,id:" + String(messageId) + ",message:" + packet);
+    return String("%VISOR" + packet);
 }
 
 /*  Opens a message from the RADIO, returns whether it is intended for the PILOT  */

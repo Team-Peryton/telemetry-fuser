@@ -2,7 +2,7 @@
 
 bool sendLetter(String message, HardwareSerial& com);
 
-String addressToVISOR(String packet, unsigned long messageId);
+String addressToVISOR(String packet);
 
 bool isPilotPacket(String packet);
 
