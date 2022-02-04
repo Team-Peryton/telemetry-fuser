@@ -20,7 +20,7 @@ const int chipSelect = BUILTIN_SDCARD;
 #define VISOR Serial3
 
 #if DEBUGGING   
-    #define DEBUG Serial
+    #define DEBUGGER Serial
 #endif
 
 /* loop working variables */
@@ -37,7 +37,7 @@ int visor_task = 0;
 void setup()
 {
     #if DEBUGGING   
-    DEBUG.begin(9600);
+    DEBUGGER.begin(9600);
     #define DEBUG Serial.println
     #endif
     
