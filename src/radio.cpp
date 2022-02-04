@@ -17,9 +17,7 @@ bool sendLetter(String message, HardwareSerial &com) // !!! Serial pointer might
 /*  Takes a packet, addresses it to the PILOT or the VISOR, formats it for radio transmission, then returns the formatted message  */
 String addressToVISOR(String packet)
 {
-    // return format "%VISOR,id:1,message:Crash immediately"
-    // return String("%VISOR,id:" + String(messageId) + ",message:" + packet);
-    return String("%VISOR,message:" + packet);
+    return String("%VISOR" + packet);
 }
 
 /*  Opens a message from the RADIO, returns whether it is intended for the PILOT  */
@@ -42,7 +40,7 @@ bool isPilotPacket(String packet)
 // If there is no ID tag this can be made more efficient
 String readMessage(String packet)
 {
-    String search = "message:";                                 // tag to search for
+    String search = "%VISOR";                                 // tag to search for
     byte startIndex = packet.indexOf(search) + search.length(); // start index of tag
     byte endIndex = packet.lastIndexOf("}");                    // index of last "}" tag. Should work even if message contains "}" and if the packet is appended with null characters
     return packet.substring(startIndex, endIndex);

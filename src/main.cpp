@@ -110,7 +110,7 @@ void setup()
     }
 }
 
-// loop() goes at the end to avoid compile errors
+
 void loop()
 {
     start = millis();
@@ -164,18 +164,18 @@ void loop()
         visor_task = intRotate(visor_task, 2);
         switch (visor_task)
         {
-        case 0:
-            // wrap VISOR packet
-            sWrappedMessage = addressToVISOR(visor_queue[0]);
-        case 1:
-            // forward a wrapped packet to the radio
-            RADIO.println(sWrappedMessage);
-        case 2:
-            // forward a stored radio packet to visor
-            VISOR.println(radio_queue[0]);
-        default:
-            // log error
-            break;
+            case 0:
+                // wrap VISOR packet
+                sWrappedMessage = addressToVISOR(visor_queue[0]);
+            case 1:
+                // forward a wrapped packet to the radio
+                RADIO.println(sWrappedMessage);
+            case 2:
+                // forward a stored radio packet to visor
+                VISOR.println(radio_queue[0]);
+            default:
+                // log error
+                break;
         }
     }
 
