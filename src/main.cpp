@@ -1,8 +1,9 @@
 #include <Arduino.h>
 #include "radio.h"
+#include "debugging.h"
 
 /* static parameters */
-#define DEBUG 1
+#define DEBUGGING 1
 #define CYCLETIME 5        // aim for X ms per cycle
 #define PACKET_RESERVE 300 // MAVLink 2 packet is supposedly max 279 bytes over-the-wire
 #define QUEUE_LENGTH 5
@@ -18,6 +19,10 @@ const int chipSelect = BUILTIN_SDCARD;
 #define PILOT Serial2
 #define VISOR Serial3
 
+#if DEBUGGING   
+    #define DEBUG Serial
+#endif
+
 /* loop working variables */
 // unsigned short id; << Already defined statically in loop()
 uint32_t start;
@@ -31,7 +36,11 @@ int visor_task = 0;
 
 void setup()
 {
-    Serial.begin(9600);
+    #if DEBUGGING   
+    DEBUG.begin(9600);
+    #define DEBUG Serial.println
+    #endif
+    
 
     pinMode(LED_BUILTIN, OUTPUT);
 
@@ -39,11 +48,12 @@ void setup()
     if (!SD.begin(chipSelect))
     { /*  ==Fast blink 10 times if the SD card fails to initialise==   */
 
-        Serial.println("SD card failed to initialise");
+        #if DEBUGGING
+        DEBUG("SD card failed to initialise");
+        #endif
 
-        for (int i = 0; i <= 10; i++)
+        for (int i = 0; i <= 10; i++) 
         {
-
             digitalWrite(LED_BUILTIN, HIGH);
             delay(200);
             digitalWrite(LED_BUILTIN, LOW);
@@ -52,7 +62,9 @@ void setup()
     }
     else
     {
-        Serial.println("SD card initialised");
+        #if (DEBUGGING)
+        DEBUG("SD card initialised");
+        #endif
 
         digitalWrite(LED_BUILTIN, HIGH); // LED stays on until file is opened successfully
         const char *filename = "Log 1.txt";
@@ -103,14 +115,6 @@ void loop()
 {
     start = millis();
 
-    /* The idea of the ID was that if either end receives a mesage with an ID which doesn't match their counter,
-    they can deduce that message(s) have been missed, and they can then resynchronise, but
-    considering only VISOR packets have an ID now I don't know if it's worth it */
-
-    /* Also, my idea was to have the ID increment each time a RADIO message is either sent or received 
-    but I do not know if that's the best way of doing it, I'm no error-detection specialist */
-    static unsigned long int id = 0; // Message ID counter
-
     if (RADIO.available())
     {
         sReceivedPacket = RADIO.readStringUntil('\n');
@@ -133,7 +137,12 @@ void loop()
     if (PILOT.available())
     {
         sReceivedPacket = PILOT.readStringUntil('\n');
-        RADIO.println(sReceivedPacket);
+
+        if (!sendLetter(sReceivedPacket, RADIO)) {
+            DEBUG("Incomplete packet sent.");
+            logger.println(Timestamp("Incomplete packet sent."));
+        }
+        
         return; // restart the loop
     }
 
@@ -157,7 +166,7 @@ void loop()
         {
         case 0:
             // wrap VISOR packet
-            sWrappedMessage = addressToVISOR(visor_queue[0], id);
+            sWrappedMessage = addressToVISOR(visor_queue[0]);
         case 1:
             // forward a wrapped packet to the radio
             RADIO.println(sWrappedMessage);

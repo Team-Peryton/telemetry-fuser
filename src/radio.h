@@ -2,11 +2,11 @@
 
 bool sendLetter(String message, HardwareSerial& com);
 
-String addressToVISOR(String packet, unsigned long messageId);
+String addressToVISOR(String packet);
 
 bool isPilotPacket(String packet);
 
-unsigned long readID(String packet);
+// unsigned long readID(String packet);
 
 String readMessage(String packet);
 

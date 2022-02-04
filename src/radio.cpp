@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
 /* Sends an addressed packet via the RADIO, returning whether the correct number of bytes were written */
-bool sendLetter(String message, HardwareSerial &com) // !!! this might not work
+bool sendLetter(String message, HardwareSerial &com) // !!! Serial pointer might not work
 {
     byte bytesWritten = com.println(message);
     if (bytesWritten == message.length())
@@ -15,10 +15,11 @@ bool sendLetter(String message, HardwareSerial &com) // !!! this might not work
 }
 
 /*  Takes a packet, addresses it to the PILOT or the VISOR, formats it for radio transmission, then returns the formatted message  */
-String addressToVISOR(String packet, unsigned long messageId)
+String addressToVISOR(String packet)
 {
     // return format "%VISOR,id:1,message:Crash immediately"
-    return String("%VISOR,id:" + String(messageId) + ",message:" + packet);
+    // return String("%VISOR,id:" + String(messageId) + ",message:" + packet);
+    return String("%VISOR,message:" + packet);
 }
 
 /*  Opens a message from the RADIO, returns whether it is intended for the PILOT  */
@@ -28,16 +29,17 @@ bool isPilotPacket(String packet)
     return (index == -1);                  // %VISOR tag not present: PILOT packet
 }
 
-/*  Opens a message from the RADIO, returns the id of the message  */
-unsigned long readID(String packet)
-{
-    String search = "id:";                                      // tag to search for
-    byte startIndex = packet.indexOf(search) + search.length(); // start index of tag
-    byte endIndex = packet.indexOf(",");                        // index of first "," delimiter
-    return packet.substring(startIndex, endIndex).toInt();      // the internet told me that .toInt() should work even though it's unsigned long
-}
+// /*  Opens a message from the RADIO, returns the id of the message  */
+// unsigned long readID(String packet)
+// {
+//     String search = "id:";                                      // tag to search for
+//     byte startIndex = packet.indexOf(search) + search.length(); // start index of tag
+//     byte endIndex = packet.indexOf(",");                        // index of first "," delimiter
+//     return packet.substring(startIndex, endIndex).toInt();      // the internet told me that .toInt() should work even though it's unsigned long
+// }
 
 /*  Opens a message from the RADIO, returns the packet contained inside  */
+// If there is no ID tag this can be made more efficient
 String readMessage(String packet)
 {
     String search = "message:";                                 // tag to search for
