@@ -28,12 +28,11 @@ const int chipSelect = BUILTIN_SDCARD;
 
 /* loop working variables */
 uint32_t start;
-uint32_t time_left;
 String sReceivedPacket;
 String sForwardPacket;
 
-cppQueue radio_queue(PACKET_RESERVE, 10, LIFO, true);
-cppQueue visor_queue(PACKET_RESERVE, 10, LIFO, true);
+cppQueue radio_queue(PACKET_RESERVE, 10, FIFO, true);
+cppQueue visor_queue(PACKET_RESERVE, 10, FIFO, true);
 String sWrappedMessage;
 int visor_task = 0;
 

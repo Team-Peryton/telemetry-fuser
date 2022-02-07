@@ -67,13 +67,3 @@ int intRotate(int current, int limit)
         return current++;
     }
 }
-
-void radioSort()
-{
-}
-void pilotSort()
-{
-}
-void visorSort()
-{
-}
