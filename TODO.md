@@ -2,14 +2,13 @@
 
 ## Critical
 
-- Actually Read and Write to Serial ports
-- `Serial.print()` or `Serial.write()`
+- Test every single function
+- Queue library requires pointers. Check that the queue entries aren't all identical
 
 ## Important
 
-- Explore buffer size
-- Test every single function
 - Maybe redesign packets so that `peek()` can be used to identify the destination
+- Does `File.println()` crash if the file was not opened?
 
 ## Useful
 
