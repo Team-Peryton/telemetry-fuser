@@ -1,6 +1,9 @@
 #include <Arduino.h>
-#include "radio.h"
-#include "debugging.h"
+#include <cppQueue.h>
+
+#include <radio.h>
+#include <debugging.h>
+
 
 /* static parameters */
 #define DEBUGGING 1
@@ -24,13 +27,12 @@ const int chipSelect = BUILTIN_SDCARD;
 #endif
 
 /* loop working variables */
-// unsigned short id; << Already defined statically in loop()
 uint32_t start;
-uint32_t time_left;
 String sReceivedPacket;
 String sForwardPacket;
-String radio_queue[QUEUE_LENGTH];
-String visor_queue[QUEUE_LENGTH];
+
+cppQueue radio_queue(PACKET_RESERVE, 10, FIFO, true);
+cppQueue visor_queue(PACKET_RESERVE, 10, FIFO, true);
 String sWrappedMessage;
 int visor_task = 0;
 
@@ -49,7 +51,7 @@ void setup()
     { /*  ==Fast blink 10 times if the SD card fails to initialise==   */
 
         #if DEBUGGING
-        DEBUG("SD card failed to initialise");
+        DEBUG("! SD card failed to initialise");
         #endif
 
         for (int i = 0; i <= 10; i++) 
@@ -63,7 +65,7 @@ void setup()
     else
     {
         #if (DEBUGGING)
-        DEBUG("SD card initialised");
+        DEBUG("> SD card initialised");
         #endif
 
         digitalWrite(LED_BUILTIN, HIGH); // LED stays on until file is opened successfully
@@ -76,7 +78,11 @@ void setup()
         SD.open(filename, FILE_WRITE);
         if (logger)
         {
-            //Something to check the file was opened properly
+            // Add something to check the file was opened properly? 
+        } else {
+            #if DEBUGGING
+            DEBUG("! File failed to open.");
+            #endif
         }
         
         digitalWrite(LED_BUILTIN, LOW);
@@ -100,14 +106,6 @@ void setup()
     sForwardPacket.reserve(PACKET_RESERVE);
     sWrappedMessage.reserve(PACKET_RESERVE);
 
-    for (int i = 0; i < QUEUE_LENGTH; i++)
-    {
-        radio_queue[i] = String().reserve(PACKET_RESERVE);
-    }
-    for (int i = 0; i < QUEUE_LENGTH; i++)
-    {
-        visor_queue[i] = String().reserve(PACKET_RESERVE);
-    }
 }
 
 
@@ -129,7 +127,7 @@ void loop()
         }
         else
         {
-            replaceQueueOldest(radio_queue, sReceivedPacket);
+            radio_queue.push(&sReceivedPacket);
         }
     }
 
@@ -139,7 +137,9 @@ void loop()
         sReceivedPacket = PILOT.readStringUntil('\n');
 
         if (!sendLetter(sReceivedPacket, RADIO)) {
-            DEBUG("Incomplete packet sent.");
+            #if DEBUGGING 
+            DEBUG("! Incomplete packet sent.");
+            #endif
             logger.println(Timestamp("Incomplete packet sent."));
         }
         
@@ -155,7 +155,7 @@ void loop()
     if (VISOR.available())
     {
         sReceivedPacket = VISOR.readStringUntil('\n');
-        replaceQueueOldest(visor_queue, sReceivedPacket);
+        visor_queue.push(&sReceivedPacket);
     }
 
     // this could maybe be "if(!RADIO.availible())"
@@ -166,13 +166,15 @@ void loop()
         {
             case 0:
                 // wrap VISOR packet
-                sWrappedMessage = addressToVISOR(visor_queue[0]);
+                visor_queue.pop(&sForwardPacket);
+                sWrappedMessage = addressToVISOR(sForwardPacket);
             case 1:
                 // forward a wrapped packet to the radio
                 RADIO.println(sWrappedMessage);
             case 2:
                 // forward a stored radio packet to visor
-                VISOR.println(radio_queue[0]);
+                radio_queue.pop(&sForwardPacket);
+                VISOR.println(sForwardPacket);
             default:
                 // log error
                 break;
